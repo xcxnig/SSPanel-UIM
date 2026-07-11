@@ -1,13 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Utils\Tools;
 
 beforeEach(function () {
     $this->originalEnv = $_ENV;
+    $this->originalTimezone = date_default_timezone_get();
 });
 
 afterEach(function () {
     $_ENV = $this->originalEnv;
+    date_default_timezone_set($this->originalTimezone);
 });
 
 describe('Tools::getIpLocation', function () {
@@ -210,7 +214,7 @@ describe('Tools::genSs2022UserPk', function () {
 
 describe('Tools::toDateTime', function () {
     it('converts timestamp to datetime string', function () {
-        date_default_timezone_set('ROC'); // Use Asia/Shanghai or PRC will cause this test to fail
+        expect(date_default_timezone_set('Etc/GMT-8'))->toBeTrue();
         
         $time = 612907200; // 1989-06-04 04:00:00 UTC+8
         $result = Tools::toDateTime($time);

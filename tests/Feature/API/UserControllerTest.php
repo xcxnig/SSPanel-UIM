@@ -1,20 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @group database
- * @group feature  
+ * @group feature
  * @group api
  */
 
-use App\Models\User;
 use App\Models\Node;
-use Tests\SlimTestCase;
+use App\Models\User;
 
 beforeEach(function () {
-    // Initialize database before any operations
-    $this->useDatabase = true;
-    $this->setUp();
-    
     // Clear previous test data
     Node::where('name', 'Test Node')->delete();
     User::where('email', 'LIKE', 'test%@example.com')->delete();
@@ -24,7 +21,7 @@ beforeEach(function () {
     $this->node->name = 'Test Node';
     $this->node->server = 'test.example.com';
     $this->node->password = bin2hex(random_bytes(32));
-    $this->node->type = 1; // shadowsocks
+    $this->node->type = 1;
     $this->node->sort = 14;
     $this->node->node_class = 0; // Allow class 0 users
     $this->node->node_group = 0; // No group restriction
@@ -38,8 +35,8 @@ afterEach(function () {
     User::where('email', 'LIKE', 'test%@example.com')->delete();
 });
 
-describe('UserController API - Shadowsocks Node', function () {
-    it('returns user list for shadowsocks node', function () {
+describe('UserController API - Trojan Node', function () {
+    it('returns user list for trojan node', function () {
         // Create test users
         $users = createUsers(3);
         
@@ -51,30 +48,28 @@ describe('UserController API - Shadowsocks Node', function () {
         assertJsonResponse($response);
         
         $data = getJsonData($response);
-        expect($data['ret'])->toBe(1)
-            ->and($data['data'])->toHaveCount(3);
+        expect($data['ret'])->toBe(1);
         
-        // Verify returned fields
-        // Note: Controller's $keys_unset are fields to be deleted
-        // For sort 14, removes: u, d, transfer_enable, method, port, passwd, node_iplimit
-        $userData = $data['data'][0];
-        
-        // These fields should be removed
-        expect($userData)->not->toHaveKeys(['u', 'd', 'transfer_enable', 'method', 'port', 'passwd', 'node_iplimit']);
-        
-        // These fields should exist
-        expect($userData)->toHaveKeys(['id', 'uuid', 'node_speedlimit']);
+        foreach ($users as $user) {
+            $userData = findUserData($data['data'], $user->id);
+
+            expect($userData)
+                ->not->toHaveKeys(['u', 'd', 'transfer_enable', 'method', 'port', 'passwd', 'node_iplimit'])
+                ->toHaveKeys(['id', 'uuid', 'node_speedlimit']);
+        }
     });
 });
 
-describe('UserController API - V2Ray Node', function () {
-    it('returns user list for v2ray node', function () {
+describe('UserController API - Shadowsocks 2022 Node', function () {
+    it('returns user list for shadowsocks 2022 node', function () {
         // Update node type
         $this->node->sort = 1;
         $this->node->save();
         
         // Create test users
-        $users = createUsers(2);
+        $sourceUser = createUsers(1)[0];
+        $sourceUser->passwd = 'password';
+        $sourceUser->save();
         
         // Send request
         $response = $this->get('/mod_mu/users?node_id=' . $this->node->id . '&key=' . $_ENV['muKey']);
@@ -86,11 +81,13 @@ describe('UserController API - V2Ray Node', function () {
         $data = getJsonData($response);
         expect($data['ret'])->toBe(1);
         
-        // Verify V2Ray node returns uuid
-        $userData = $data['data'][0];
+        // Verify Shadowsocks 2022 returns a derived user password
+        $userData = findUserData($data['data'], $sourceUser->id);
         expect($userData)
-            ->toHaveKey('uuid')
-            ->not->toHaveKey('passwd');
+            ->toHaveKey('passwd')
+            ->not->toHaveKey('uuid')
+            ->and($userData['passwd'])->toBe('YzAwNjdkNGFmNGU4N2YwMA==')
+            ->not->toBe($sourceUser->passwd);
     });
 });
 
@@ -117,11 +114,11 @@ describe('UserController API Traffic Reporting', function () {
                 'user_id' => $user->id,
                 'u' => 1024 * 1024, // 1MB
                 'd' => 2048 * 1024, // 2MB
-            ]
+            ],
         ];
         
         $response = $this->post('/mod_mu/users/traffic?node_id=' . $this->node->id . '&key=' . $_ENV['muKey'], [
-            'data' => json_encode($trafficData),
+            'data' => $trafficData,
         ]);
         
         // Verify response
@@ -129,7 +126,8 @@ describe('UserController API Traffic Reporting', function () {
         assertJsonResponse($response);
         
         $data = getJsonData($response);
-        expect($data['data'])->toBe('ok');
+        expect($data['ret'])->toBe(1)
+            ->and($data['msg'])->toBe('ok');
         
         // Verify traffic update
         $user->refresh();
@@ -138,26 +136,10 @@ describe('UserController API Traffic Reporting', function () {
     });
 });
 
-describe('UserController API Node Status', function () {
-    it('updates node online status', function () {
-        // Send heartbeat
-        $response = $this->post('/mod_mu/nodes/alive?node_id=' . $this->node->id . '&key=' . $_ENV['muKey'], [
-            'load' => '0.5',
-            'uptime' => '86400',
-        ]);
-        
-        // Verify response
-        assertResponseStatus(200, $response);
-        
-        // Verify node status update
-        $this->node->refresh();
-        expect($this->node->status)->toBe('online')
-            ->and(strtotime($this->node->last_check_at))->toBeGreaterThan(time() - 60);
-    })->skip('Node alive endpoint not implemented yet');
-});
-
 describe('UserController API Caching', function () {
     it('supports etag caching', function () {
+        createUsers(1);
+
         // First request
         $response1 = $this->get('/mod_mu/users?node_id=' . $this->node->id . '&key=' . $_ENV['muKey']);
         
@@ -172,7 +154,7 @@ describe('UserController API Caching', function () {
         
         // Should return 304
         assertResponseStatus(304, $response2);
-    })->skip('ETag caching not implemented in current API');
+    });
 });
 
 // Helper functions specific to this test file
@@ -226,4 +208,15 @@ function createUsers(int $count): array
         $users[] = $user;
     }
     return $users;
+}
+
+function findUserData(array $users, int $id): array
+{
+    foreach ($users as $user) {
+        if ($user['id'] === $id) {
+            return $user;
+        }
+    }
+
+    throw new RuntimeException("User {$id} was not returned by the API.");
 }

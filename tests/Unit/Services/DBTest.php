@@ -12,6 +12,15 @@ afterEach(function () {
     $_ENV = $this->originalEnv;
 });
 
+it('propagates connection failures', function () {
+    $_ENV['enable_db_rw_split'] = false;
+    $_ENV['db_host'] = '127.0.0.1';
+    $_ENV['db_socket'] = '';
+    $_ENV['db_port'] = 1;
+
+    expect(fn () => DB::init())->toThrow(PDOException::class);
+});
+
 it('gets config with read/write split enabled', function () {
     $_ENV['enable_db_rw_split'] = true;
     $_ENV['read_db_hosts'] = 'localhost';

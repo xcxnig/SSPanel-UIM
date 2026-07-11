@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Slim\Factory\AppFactory;
-use Slim\Http\Factory\DecoratedServerRequestFactory;
 use GuzzleHttp\Psr7\HttpFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Slim\Factory\AppFactory;
+use Slim\Http\Factory\DecoratedServerRequestFactory;
 
 abstract class SlimTestCase extends TestCase
 {
+    protected bool $useDatabase = true;
+
     protected $app;
     
     protected function setUp(): void
@@ -30,9 +32,6 @@ abstract class SlimTestCase extends TestCase
     
     protected function setUpTestEnvironment(): void
     {
-        $_ENV['db_driver'] = 'sqlite';
-        $_ENV['db_database'] = ':memory:';
-        
         $_ENV['webAPI'] = true;
         $_ENV['muKey'] = 'test_key_123';
         $_ENV['webAPIUrl'] = 'https://test.example.com';
@@ -100,8 +99,9 @@ abstract class SlimTestCase extends TestCase
             $request = $request->withHeader($name, $value);
         }
         
-        if (!empty($data)) {
-            $request = $request->withParsedBody($data);
+        if ($data !== []) {
+            $request->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
+            $request->getBody()->rewind();
         }
         
         return $this->app->handle($request);

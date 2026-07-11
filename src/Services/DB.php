@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Exception;
 use Illuminate\Database\Capsule\Manager;
-use const PHP_EOL;
 
 final class DB extends Manager
 {
@@ -14,16 +12,8 @@ final class DB extends Manager
     {
         $db = new DB();
 
-        try {
-            $db->addConnection(self::getConfig());
-            $db->getConnection()->getPdo();
-        } catch (Exception $e) {
-            if ($_ENV['debug']) {
-                die('Database Error' . PHP_EOL . 'Reason: ' . $e->getMessage());
-            }
-
-            die('Database Error');
-        }
+        $db->addConnection(self::getConfig());
+        $db->getConnection()->getPdo();
 
         $db->setAsGlobal();
         $db->bootEloquent();

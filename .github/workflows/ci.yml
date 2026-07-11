@@ -104,18 +104,18 @@ jobs:
         cp config/.config.example.php config/.config.php
         
         # Database configuration
-        sed -i "s/'db_host' => '.*'/'db_host' => '127.0.0.1'/g" config/.config.php
-        sed -i "s/'db_database' => '.*'/'db_database' => 'sspanel_test'/g" config/.config.php
-        sed -i "s/'db_username' => '.*'/'db_username' => 'root'/g" config/.config.php
-        sed -i "s/'db_password' => '.*'/'db_password' => 'password'/g" config/.config.php
+        sed -i "s|^\$_ENV\['db_host'\] = .*|\$_ENV['db_host'] = '127.0.0.1';|" config/.config.php
+        sed -i "s|^\$_ENV\['db_database'\] = .*|\$_ENV['db_database'] = 'sspanel_test';|" config/.config.php
+        sed -i "s|^\$_ENV\['db_username'\] = .*|\$_ENV['db_username'] = 'root';|" config/.config.php
+        sed -i "s|^\$_ENV\['db_password'\] = .*|\$_ENV['db_password'] = 'password';|" config/.config.php
         
         # Redis configuration
-        sed -i "s/'redis_host' => '.*'/'redis_host' => '127.0.0.1'/g" config/.config.php
-        sed -i "s/'redis_port' => '.*'/'redis_port' => '6379'/g" config/.config.php
-        sed -i "s/'redis_db' => .*/'redis_db' => 15/g" config/.config.php
+        sed -i "s|^\$_ENV\['redis_host'\] = .*|\$_ENV['redis_host'] = '127.0.0.1';|" config/.config.php
+        sed -i "s|^\$_ENV\['redis_port'\] = .*|\$_ENV['redis_port'] = 6379;|" config/.config.php
+        sed -i "s|^\$_ENV\['redis_db'\] = .*|\$_ENV['redis_db'] = 15;|" config/.config.php
         
         # Set muKey for API testing
-        sed -i "s/'muKey' => '.*'/'muKey' => 'test-mukey-for-ci-environment'/g" config/.config.php
+        sed -i "s|^\$_ENV\['muKey'\] = .*|\$_ENV['muKey'] = 'test-mukey-for-ci-environment';|" config/.config.php
         
         # Set testing environment
         echo "APP_ENV=testing" >> $GITHUB_ENV
@@ -126,7 +126,7 @@ jobs:
         php xcat Migration latest
     
     - name: Run Pest tests with coverage
-      run: vendor/bin/pest --coverage-clover coverage.xml --coverage
+      run: vendor/bin/pest --coverage-clover coverage.xml
     
     - name: Upload coverage to Codecov
       # Only upload coverage from one PHP version to avoid duplicates

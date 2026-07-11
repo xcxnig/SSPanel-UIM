@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Exception;
+use const PHP_EOL;
 use function date_default_timezone_set;
 use function microtime;
 use function Sentry\init;
@@ -18,7 +20,15 @@ final class Boot
 
     public static function bootDb(): void
     {
-        DB::init();
+        try {
+            DB::init();
+        } catch (Exception $e) {
+            if ($_ENV['debug']) {
+                die('Database Error' . PHP_EOL . 'Reason: ' . $e->getMessage());
+            }
+
+            die('Database Error');
+        }
     }
 
     public static function bootSentry(): void
