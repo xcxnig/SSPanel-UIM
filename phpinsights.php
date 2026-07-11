@@ -35,10 +35,10 @@ return [
             'maxComplexity' => 15,
         ],
         NunoMaduro\PhpInsights\Domain\Insights\ClassMethodAverageCyclomaticComplexityIsHigh::class => [
-            'maxComplexity' => 10,
+            'maxClassMethodAverageComplexity' => 10,
         ],
         NunoMaduro\PhpInsights\Domain\Insights\MethodCyclomaticComplexityIsHigh::class => [
-            'maxComplexity' => 15,
+            'maxMethodComplexity' => 15,
         ],
     ],
 

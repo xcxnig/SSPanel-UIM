@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use Exception;
-use const PHP_EOL;
 use function date_default_timezone_set;
 use function microtime;
 use function Sentry\init;
+use const PHP_EOL;
 
 final class Boot
 {

@@ -145,7 +145,7 @@ $_ENV['SingBox_Config'] = [
                 'action' => 'evaluate',
                 'server' => $_ENV['dns_select'],
                 'disable_cache' => true,
-                'client_subnet' => '111.222.0.0'
+                'client_subnet' => '111.222.0.0',
             ],
             [
                 'rule_set' => [
@@ -153,7 +153,7 @@ $_ENV['SingBox_Config'] = [
                 ],
                 'server' => $_ENV['dns_select'],
                 'disable_cache' => true,
-                'client_subnet' => '111.222.0.0'
+                'client_subnet' => '111.222.0.0',
             ],
             [
                 'type' => 'logical',
